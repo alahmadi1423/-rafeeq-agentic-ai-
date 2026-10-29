@@ -42,7 +42,7 @@ Rafeeq demonstrates a more controlled workflow: use a local policy tool for poli
 
 ## Document RAG
 
-Open `/rag` from the homepage to upload a text-based PDF and retrieve passages from it alongside the built-in synthetic policy files.
+Open `/rag` from the homepage to upload a text-based PDF and retrieve passages from it alongside the built-in synthetic policy files. To get a generated answer grounded in the indexed passages, return to the chat page and ask your question; the configured OpenRouter agent can call the same retrieval tool.
 
 - **Chunking:** extracts text page-by-page and splits it into overlapping chunks.
 - **Retrieval:** deterministic lexical term matching ranks up to five relevant chunks.
@@ -177,17 +177,22 @@ Use synthetic example details only.
 .
 ├── README.md
 ├── app/
+│   ├── rag.py
 │   ├── tools.py
 │   ├── agent.py
-│   ├── llm_agent.py
 │   ├── openrouter_agent.py
-│   └── web_app.py
+│   ├── web_app.py
+│   └── templates/
+│       ├── index.html
+│       ├── application.html
+│       └── rag.html
 ├── policies/
 │   └── food_truck_policy.md
 └── tests/
     ├── test_tools.py
     ├── test_agent.py
-    └── test_openrouter_agent.py
+    ├── test_openrouter_agent.py
+    └── test_rag.py
 ```
 
 ## Capstone, engineering loop, evals, and error analysis
