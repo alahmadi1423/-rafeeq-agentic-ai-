@@ -23,6 +23,7 @@ Rafeeq demonstrates a more controlled workflow: use a local policy tool for poli
 - **Local policy search:** searches the project's synthetic food-truck policy document.
 - **Application validation:** checks required fields and identifies missing, non-text, or overlong values.
 - **Draft preparation:** creates a structured local draft only when required fields pass validation.
+- **Guided application builder:** `/application` provides a form-based flow to validate required fields and preview a local draft without relying on model extraction.
 - **Explicit draft status:** drafts remain marked as awaiting approval; the project does not submit them to an external service.
 
 ### Agent modes
