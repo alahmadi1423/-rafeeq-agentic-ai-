@@ -167,13 +167,14 @@ Use synthetic example details only.
     └── test_openrouter_agent.py
 ```
 
-## Capstone, engineering loop, and evaluations
+## Capstone, engineering loop, evals, and error analysis
 
 The project includes a capstone brief and a repeatable improvement workflow:
 - [Capstone brief](CAPSTONE.md): problem statement, scope, architecture, success criteria, risks, and deliverables.
 - [Engineering loop](ENGINEERING_LOOP.md): reproduce → specify → change → test → evaluate → review → document.
 - [Offline eval runner](evals/run_evals.py): deterministic checks for local policy search, invalid tool calls, application validation, and safe draft status.
 - [Live-model evaluation plan](evals/MODEL_EVALS.md): Arabic/English scenarios and a scoring rubric for grounding, tool use, safety, and clarity.
+- [Trifecta analysis](TRIFECTA_ANALYSIS.md): evaluate quality, latency, and cost together, with safety treated as a release gate.
 
 Run the offline evals from the project root:
 
@@ -181,7 +182,11 @@ Run the offline evals from the project root:
 PYTHONPATH=. python -m evals.run_evals
 ```
 
-These checks do not call OpenRouter and do not establish live-model answer quality. Run and report live-model evaluations separately using the documented rubric.
+These checks do not call OpenRouter and do not establish live-model answer quality. Run and report live-model evaluations separately using the documented rubric. For each live run, record the model ID, date, dataset version, pass rate, latency, and estimated cost; do not claim measurements that were not collected.
+
+## Learning Resource
+
+- [SDAIA Academy — Agentic AI Course](https://sdaiaacademy.github.io/agentic-ai/): learning resource for the agentic AI concepts explored in this project.
 
 ## Future Improvements
 
