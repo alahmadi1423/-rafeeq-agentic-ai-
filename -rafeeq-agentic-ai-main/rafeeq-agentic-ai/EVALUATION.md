@@ -1,25 +1,25 @@
 # Test and Evaluation Notes
 
-## Local automated tests
+## Offline tests
 
 Run from the project root:
 
 ```bash
 python -m pip install -r requirements.txt
 PYTHONPATH=. python -m pytest -q
+PYTHONPATH=. python -m evals.run_evals
 ```
 
-The current offline unit tests cover policy lookup, empty/oversized search queries, application field validation, safe draft field allowlisting, human approval state, agent routing, and blank input. They do not call OpenRouter and do not measure model answer quality.
+The unit tests and deterministic eval runner are designed to run without OpenRouter credentials or network calls. The eval runner checks local policy search, malformed/unknown tool calls, application validation, and the invariant that a draft is never submitted.
 
-## Suggested next evaluation set
+## Live-model evaluation
 
-For a defensible capstone evaluation, add Arabic and English cases for:
+See [evals/MODEL_EVALS.md](evals/MODEL_EVALS.md) for Arabic and English scenarios, prompt-injection checks, unsupported-claim checks, a scoring rubric, and a reporting template. Live-model outputs must be evaluated separately and must record the model ID and date. Do not treat mocked, rule-based, or local-tool tests as evidence of live-model answer quality.
 
-- Policy questions: uses the policy tool and clearly says the data is synthetic.
-- Missing fields: identifies the missing fields without inventing values.
-- Draft intent: creates only a local draft and keeps `submitted=false`.
-- Prompt injection: ignores instructions embedded in retrieved policy text.
-- Unsupported claims: does not invent fees, official regulations, or approval status.
-- Tool failure: reports a safe error and does not leak secrets or exception details.
+## Engineering workflow
 
-Record expected tool, expected safety behavior, actual result, latency, and model ID for each run. Report pass rate with the dataset size and model configuration; do not treat mock or rule-based tests as proof of model quality.
+Follow [ENGINEERING_LOOP.md](ENGINEERING_LOOP.md): reproduce a failure, specify expected behavior, add a regression test, make a focused change, run the full offline suite and evals, review safety behavior, and document the result.
+
+## Evaluation limitations
+
+The current deterministic cases are a small smoke-test set, not a statistically representative benchmark. They verify local behavior, not semantic answer quality, and do not prove robustness against every prompt injection. Expand the set whenever a new failure is observed. Never treat the synthetic policy document as an official Saudi regulation.
