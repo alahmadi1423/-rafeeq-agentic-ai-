@@ -1,0 +1,45 @@
+<!doctype html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="theme-color" content="#123d38">
+<title>مساعد تجهيز الطلب | رفيق</title>
+<style>
+:root{font-family:Tahoma,"Segoe UI",system-ui,sans-serif;color:#172a28;background:#f3f7f5;line-height:1.7;--green:#176b5d;--line:#dce7e3;--muted:#627571}
+*{box-sizing:border-box}body{margin:0}.shell{width:min(760px,calc(100% - 28px));margin:30px auto}.top{display:flex;justify-content:space-between;align-items:center;gap:12px;margin-bottom:20px}.brand{font-weight:800;font-size:1.2rem}.link{color:var(--green);text-decoration:none;font-weight:700}.panel{background:#fff;border:1px solid var(--line);border-radius:20px;padding:clamp(18px,4vw,30px);box-shadow:0 18px 50px #153e3510}.eyebrow{color:var(--green);font-size:.85rem;font-weight:700;margin:0}.panel h1{font-size:clamp(1.5rem,4vw,2rem);margin:5px 0 8px}.intro{color:var(--muted);margin:0 0 22px}.grid{display:grid;grid-template-columns:1fr 1fr;gap:15px}.field label{display:block;font-weight:700;margin-bottom:6px}.field input{width:100%;border:1px solid #cddbd5;border-radius:12px;padding:12px;font:inherit;background:#fcfefd}.field input:focus{outline:3px solid #b9e7d7;border-color:var(--green)}.help{font-size:.8rem;color:var(--muted);margin:5px 0 0}.actions{display:flex;flex-wrap:wrap;gap:10px;margin-top:22px}.btn{border:1px solid var(--line);border-radius:12px;padding:11px 16px;background:#fff;font:inherit;font-weight:700;cursor:pointer}.btn.primary{background:var(--green);color:white;border-color:var(--green)}.btn:disabled{opacity:.6;cursor:wait}.status{margin-top:14px;color:var(--muted);min-height:24px}.result{margin-top:16px;border:1px solid var(--line);border-radius:14px;padding:16px;background:#f9fcfa}.result h2{font-size:1rem;margin:0 0 8px}.result p{margin:5px 0}.ok{color:#21644f}.warn{color:#815b13}.error{color:#a33c35}.draft{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:12px}.item{background:white;border:1px solid var(--line);padding:10px;border-radius:10px;overflow-wrap:anywhere}.item small{display:block;color:var(--muted)}.notice{margin-top:18px;background:#fff9e9;border:1px solid #f0e0b5;border-radius:12px;padding:13px;color:#715c2b;font-size:.83rem}.hidden{display:none!important}@media(max-width:560px){.grid,.draft{grid-template-columns:1fr}.top{align-items:flex-start}}
+</style>
+</head>
+<body><main class="shell">
+<header class="top"><div class="brand">رفيق · مساعد الطلبات</div><a class="link" href="/">العودة للمحادثة ←</a></header>
+<section class="panel">
+<p class="eyebrow">أداة جديدة · بدون الحاجة إلى محادثة مع النموذج</p>
+<h1>جهّز طلبك خطوة بخطوة</h1>
+<p class="intro">أدخل البيانات التجريبية، تحقق من اكتمالها، ثم أنشئ مسودة محلية للمراجعة. هذه الصفحة لا ترسل طلبات إلى أي جهة.</p>
+<form id="application-form">
+<div class="grid">
+<div class="field"><label for="applicant_name">اسم المتقدم</label><input id="applicant_name" name="applicant_name" maxlength="300" autocomplete="off" placeholder="مثال: أحمد تجريبي" required></div>
+<div class="field"><label for="location">الموقع</label><input id="location" name="location" maxlength="300" autocomplete="off" placeholder="مثال: منطقة تجريبية في جدة" required></div>
+<div class="field"><label for="activity">النشاط</label><input id="activity" name="activity" maxlength="300" autocomplete="off" placeholder="مثال: بيع القهوة من عربة طعام" required></div>
+<div class="field"><label for="contact">معلومات التواصل</label><input id="contact" name="contact" maxlength="300" autocomplete="off" placeholder="مثال: demo@example.com" required></div>
+</div>
+<div class="actions"><button class="btn" id="validate" type="button">تحقق من البيانات</button><button class="btn primary" id="draft" type="button">إنشاء مسودة</button><button class="btn" id="reset" type="reset">مسح الحقول</button></div>
+</form>
+<div id="status" class="status" role="status" aria-live="polite"></div>
+<section id="result" class="result hidden" aria-live="polite"></section>
+<div class="notice"><strong>تنبيه:</strong> رفيق نموذج تعليمي يستخدم بيانات وسياسات اصطناعية. لا تدخل معلومات شخصية حقيقية. المسودة ليست طلبًا رسميًا ولا يتم إرسالها أو اعتمادها.</div>
+</section></main>
+<script>
+const form=document.getElementById('application-form');
+const statusEl=document.getElementById('status');
+const resultEl=document.getElementById('result');
+const buttons=[document.getElementById('validate'),document.getElementById('draft')];
+const labels={applicant_name:'اسم المتقدم',location:'الموقع',activity:'النشاط',contact:'معلومات التواصل'};
+function payload(){return Object.fromEntries(new FormData(form).entries())}
+function show(title,body,className=''){resultEl.replaceChildren();resultEl.classList.remove('hidden');const h=document.createElement('h2');h.textContent=title;resultEl.append(h);const p=document.createElement('p');p.className=className;p.textContent=body;resultEl.append(p)}
+function renderValidation(data){const r=data.result||{};if(r.valid){show('التحقق من البيانات','كل الحقول المطلوبة مكتملة. يمكنك إنشاء مسودة للمراجعة.','ok');return}const missing=r.missing_field_labels||r.missing_fields||[];show('توجد بيانات تحتاج إلى مراجعة',missing.length?'الحقول الناقصة: '+missing.join('، '):'يرجى مراجعة البيانات المدخلة.','warn');(r.errors||[]).forEach(e=>{const p=document.createElement('p');p.className='error';p.textContent=e;resultEl.append(p)})}
+async function submitAction(action){buttons.forEach(b=>b.disabled=true);statusEl.textContent='جارٍ التحقق…';try{const response=await fetch('/api/application/'+action,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(payload())});const data=await response.json();if(action==='validate'&&response.ok){renderValidation(data)}else if(action==='draft'&&response.ok){const draft=data.result.draft;show('تم إنشاء مسودة محلية','الحالة: بانتظار المراجعة البشرية. لم يتم إرسال أي طلب.','ok');const grid=document.createElement('div');grid.className='draft';Object.entries(draft).forEach(([key,value])=>{const item=document.createElement('div');item.className='item';const small=document.createElement('small');small.textContent=labels[key]||key;const strong=document.createElement('strong');strong.textContent=value;item.append(small,strong);grid.append(item)});resultEl.append(grid)}else{const message=data.error||(data.result?.missing_field_labels||[]).join('، ')||'أكمل الحقول المطلوبة ثم حاول مجددًا.';show('لم تكتمل العملية',message,'error')}}catch(e){show('تعذر الاتصال','تأكد أن تطبيق رفيق يعمل ثم حاول مرة أخرى.','error')}finally{buttons.forEach(b=>b.disabled=false);statusEl.textContent='انتهت العملية.'}}
+document.getElementById('validate').addEventListener('click',()=>submitAction('validate'));
+document.getElementById('draft').addEventListener('click',()=>submitAction('draft'));
+document.getElementById('reset').addEventListener('click',()=>{resultEl.classList.add('hidden');resultEl.replaceChildren();statusEl.textContent=''});
+</script></body></html>
