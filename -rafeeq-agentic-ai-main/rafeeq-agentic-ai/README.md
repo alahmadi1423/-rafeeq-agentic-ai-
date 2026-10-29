@@ -1,135 +1,180 @@
-# Rafeeq — Agentic AI Municipal Assistant
+# Rafeeq — Agentic AI Permit Assistant
 
-Rafeeq (رفيق) is an educational prototype of a bilingual municipal-permit assistant. It demonstrates how an AI agent can retrieve policy information, validate application details, prepare a structured draft, and pause for human review before any consequential action.
+![Python](https://img.shields.io/badge/Python-3.11%2B-3776AB?logo=python&logoColor=white)
+![Flask](https://img.shields.io/badge/Flask-Web_App-000000?logo=flask&logoColor=white)
+![OpenRouter](https://img.shields.io/badge/LLM-OpenRouter-6566F1)
+![Tests](https://img.shields.io/badge/Tests-Pytest-0A9EDC?logo=pytest&logoColor=white)
+![Status](https://img.shields.io/badge/Status-Educational_Prototype-orange)
 
-> **Educational demo only:** Madar and its policies are fictional. All policy content and applicant examples are synthetic. Rafeeq does not submit applications to a government service or issue permits.
+Rafeeq (رفيق) is an educational agentic AI prototype that helps users explore the requirements for a **fictional food-truck permit**. It combines local policy retrieval, application-field validation, draft preparation, and an optional OpenRouter-powered tool-calling agent.
 
-## Overview
+> [!NOTE]
+> This is an independent learning project. The municipality, policy, and example applicant data are fictional and synthetic. Rafeeq is not an official government service and does not submit applications or issue permits.
 
-Municipal-permit processes can involve questions about requirements, missing information, and application preparation. A general-purpose chatbot may give unsupported answers or imply that an action has been completed when it has not.
+## Problem Statement
 
-Rafeeq explores a more controlled approach: combine local policy tools and validation logic with an AI agent, return structured results, and keep human approval separate from draft preparation.
+Permit processes can involve questions about requirements and missing application details. A general-purpose chatbot may respond without grounding its answer in the available policy or imply that an application has been submitted when it has not.
+
+Rafeeq demonstrates a more controlled workflow: use a local policy tool for policy-related questions, validate required fields with application logic, and prepare a local draft that remains unsubmitted for human review.
 
 ## Features
 
-- **Policy lookup:** retrieve information from a local, synthetic food-truck permit policy.
-- **Application validation:** identify missing or invalid fields using the project's tools.
-- **Structured drafts:** prepare an application draft for review rather than claiming it has been submitted.
-- **Rule-based mode:** run a deterministic demo without an API key.
-- **LLM tool-calling mode:** use OpenRouter to let a model select from the available tools.
-- **Arabic web interface:** a Flask-based right-to-left interface displays the response, policy results, and a short tool trace when available.
-- **Automated tests:** tests cover the tools and rule-based agent.
+### Policy and application support
+- **Local policy search:** searches the project's synthetic food-truck policy document.
+- **Application validation:** checks required fields and identifies missing, non-text, or overlong values.
+- **Draft preparation:** creates a structured local draft only when required fields pass validation.
+- **Explicit draft status:** drafts remain marked as awaiting approval; the project does not submit them to an external service.
 
-## How it works
+### Agent modes
+- **Rule-based agent:** deterministic keyword routing for a small set of supported Arabic and English requests.
+- **OpenRouter tool-calling agent:** lets a language model select from a defined set of local tools.
+- **Tool argument checks:** validates model-generated tool names and argument shapes before dispatch.
+- **Bounded requests:** limits message size, tool-call batches, and tool rounds.
 
-1. The user asks a question or provides draft application details.
-2. Rafeeq consults the local policy and validation tools.
-3. The rule-based agent or OpenRouter-powered agent produces a response.
-4. The interface presents relevant results and a structured draft where applicable.
-5. A human reviews the draft. Preparing a draft does not submit an application or grant a permit.
+### Web interface and tests
+- **Arabic-first web app:** Flask serves the local interface and a chat endpoint.
+- **Basic demo protections:** request-size limits and a per-process rate limiter.
+- **Automated tests:** Pytest tests cover policy search, application validation, draft behavior, rule-based routing, and tool argument validation.
 
-## Technology
+## How It Works
 
-- Python 3.11+
-- Flask for the local web interface
-- OpenAI-compatible client and OpenRouter for model-powered tool calling
-- Pytest for automated tests
-- Local synthetic policy data
+1. The user asks a question or requests help preparing a food-truck application.
+2. Rafeeq searches the local synthetic policy or validates the supplied application fields.
+3. In model-powered mode, OpenRouter returns a response and may request one of the registered tools.
+4. Rafeeq checks the tool arguments and runs the matching local function.
+5. The user receives the answer or draft status. A prepared draft is **not** an official submission or permit approval.
 
-## Requirements
+## Architecture and Tools
 
-- Python 3.11 or a compatible version
+| Component | Responsibility | Boundary |
+|---|---|---|
+| `search_policies` | Searches local Markdown policy content | Returns synthetic policy text; it is not an official source |
+| `validate_application` | Checks required applicant, location, activity, and contact fields | Performs field validation only |
+| `create_application_draft` | Creates a structured local draft | Does not submit or approve an application |
+| Rule-based agent | Routes supported requests using simple rules | Limited intent recognition; not a general reasoning engine |
+| OpenRouter agent | Calls a configured model and processes tool calls | Model output is untrusted and tool arguments are checked |
+| Flask web app | Serves the UI and `/chat` endpoint | Intended for local demonstration, not public deployment |
+
+### Guardrails and limitations
+
+- **Synthetic policy:** retrieved content is fictional and must not be treated as actual municipal requirements.
+- **No external actions:** the prototype has no government-system integration and cannot submit, approve, or issue permits.
+- **Human review:** draft creation is separate from approval and submission.
+- **Tool boundaries:** only registered tools are dispatched; tool arguments are validated before execution.
+- **Secrets:** the OpenRouter API key must be provided through an environment variable and never committed to source control.
+- **Web security:** the built-in request-size and rate limits are basic, in-process controls. They are not a replacement for authentication, production-grade rate limiting, monitoring, or deployment hardening.
+- **Model availability:** model names, free routing, rate limits, and provider availability may change.
+
+## Technology Stack
+
+- **Python** — application and agent logic
+- **Flask** — local web interface and chat endpoint
+- **OpenAI-compatible Python client + OpenRouter** — optional model-powered tool calling
+- **Pytest** — automated tests
+- **Markdown** — local synthetic policy data
+
+## Getting Started
+
+### Requirements
+
+- Python 3.11 or newer
 - `pip`
-- An OpenRouter API key for the model-powered agent and any features that require live model access
+- An OpenRouter API key for model-powered mode
 
-## Run locally
+### Install dependencies
 
-From the project root:
+Run these commands from the directory containing the `app/`, `policies/`, and `tests/` folders:
 
 ```bash
-python -m pip install openai pytest
-PYTHONPATH=. python -m pytest -v
+python -m pip install flask openai pytest
 ```
 
-Start the Arabic web interface:
+### Configure OpenRouter
+
+Set your API key in the environment before starting the app.
+
+**macOS / Linux**
+```bash
+export OPENROUTER_API_KEY="your-key"
+```
+
+**Windows PowerShell**
+```powershell
+$env:OPENROUTER_API_KEY="your-key"
+```
+
+Do not put a real key in your source code, README, screenshots, or Git commits.
+
+### Run the web app
 
 ```bash
 PYTHONPATH=. python -m app.web_app
 ```
 
-Then open [http://127.0.0.1:5000](http://127.0.0.1:5000).
+Open [http://127.0.0.1:5000](http://127.0.0.1:5000) in your browser. The server binds to localhost for local demonstration.
 
-To use the OpenRouter agent, set `OPENROUTER_API_KEY` in your shell or environment configuration before starting the app. Never commit API keys, secrets, or populated `.env` files to the repository.
-
-Example Python usage:
-
-```python
-from app.openrouter_agent import run_openrouter_agent
-
-result = run_openrouter_agent(
-    "ما المتطلبات الأساسية لتصريح عربة طعام؟"
-)
-print(result["answer"])
-```
-
-The agent defaults to the `openrouter/free` model router. Available models, routing, rate limits, and free endpoint availability can change over time.
-
-## Run in Google Colab
-
-If you are using the project in Colab, first change to the directory containing the project, then install the dependencies and run the tests:
-
-```python
-%cd /content/-rafeeq-agentic-ai/rafeeq-agentic-ai
-%pip install -q openai pytest
-```
+### Run the tests
 
 ```bash
-!PYTHONPATH="$PWD" python -m pytest -q
+PYTHONPATH=. python -m pytest -v
 ```
 
-For model-powered usage, add `OPENROUTER_API_KEY` to **Colab Secrets** and load it without hard-coding the key in a notebook:
+The tests are designed to run locally without calling the live OpenRouter service. The model-powered web chat itself requires a valid API key and provider availability.
 
-```python
-from google.colab import userdata
-import os
+## Example
 
-os.environ["OPENROUTER_API_KEY"] = userdata.get("OPENROUTER_API_KEY")
-```
-
-The rule-based demo does not require an API key.
-
-## Project structure
+A user can ask in Arabic:
 
 ```text
-app/
-  tools.py
-  agent.py
-  llm_agent.py
-  openrouter_agent.py
-  web_app.py
-policies/
-  food_truck_policy.md
-tests/
-  test_tools.py
-  test_agent.py
+ما المتطلبات الأساسية لتصريح عربة طعام؟
 ```
 
-## Security and limitations
+Or request a draft after supplying all required fields:
 
-- **Synthetic data only:** the policy and applicant examples are fictional and are not official Saudi municipal requirements.
-- **Drafts are not submissions:** the prototype does not connect to a government system and cannot issue a permit.
-- **Protect API keys:** use environment variables or a secrets manager; do not commit credentials or populated environment files.
-- **Tool boundaries:** model tool calls are limited to the tools implemented by the application; errors shown to the model or interface are sanitized.
-- **Local demo controls:** the web demo includes basic request-size and per-process rate limits. These are not a substitute for production authentication, shared rate limiting, or deployment-level security controls.
-- **Prototype status:** local educational data and a lightweight web server are intended for learning and demonstration, not production use.
+```python
+from app.tools import create_application_draft
 
-## Potential next steps
+application = {
+    "applicant_name": "Demo User",
+    "location": "Demo Location",
+    "activity": "Food truck",
+    "contact": "demo@example.com",
+}
 
-- Add a documented setup script and a single configuration path for local and Colab usage.
-- Expand tests to cover model-agent tool selection, invalid inputs, and error handling.
-- Add evaluation cases for Arabic and English policy questions, tool-use accuracy, and unsupported claims.
-- If the project is ever adapted for real services, add proper authentication, authorization, persistent storage, privacy review, monitoring, and human-governed workflows before connecting to external systems.
+result = create_application_draft(application)
+print(result["status"])     # awaiting_approval
+print(result["submitted"])  # False
+```
+
+Use synthetic example details only.
+
+## Project Structure
+
+```text
+.
+├── README.md
+├── app/
+│   ├── tools.py
+│   ├── agent.py
+│   ├── llm_agent.py
+│   ├── openrouter_agent.py
+│   └── web_app.py
+├── policies/
+│   └── food_truck_policy.md
+└── tests/
+    ├── test_tools.py
+    ├── test_agent.py
+    └── test_openrouter_agent.py
+```
+
+## Future Improvements
+
+- Add evaluation scenarios for Arabic and English policy questions, tool-selection accuracy, and unsupported claims.
+- Expand the policy search beyond simple keyword matching.
+- Add integration tests for web request validation and model-provider failures.
+- Document and standardize dependency management and configuration for local and notebook-based workflows.
+- Before any real-world adaptation, add robust authentication and authorization, privacy review, durable audit logging, monitoring, and a formal human-approval workflow.
 
 ## Acknowledgements
 
-This project is an independent educational prototype inspired by agentic AI concepts. It is not affiliated with or endorsed by any government authority.
+Rafeeq is an independent educational prototype inspired by agentic AI concepts. It is not affiliated with or endorsed by any municipality or government authority.
