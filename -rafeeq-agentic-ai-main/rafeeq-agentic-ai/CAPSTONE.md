@@ -23,11 +23,26 @@ Build and evaluate a small, auditable agent that answers in Arabic or English, r
 - Production deployment without authentication, privacy review, monitoring, and security hardening.
 
 ## System design
-1. Flask accepts a bounded user message.
-2. The configured agent responds directly or requests a registered tool.
+1. Flask accepts a bounded chat message or structured application payload.
+2. The chat agent responds directly or requests a registered tool.
 3. The application validates tool names and argument schemas before dispatch.
-4. Local tools return policy snippets, validation findings, or a draft status.
-5. The agent returns a user-facing answer; draft creation never means submission.
+4. Local policy retrieval returns snippets from the synthetic policy document.
+5. Deterministic application endpoints validate allowed fields and required values independently of the LLM.
+6. The guided `/application` page lets users validate a form, preview a local draft, and export it as JSON.
+7. Draft creation never means submission; exported drafts retain an explicit `submitted=false` status.
+
+## User-facing workflow
+1. Open the chat page to ask a policy question, or navigate to `/application` to use the structured form.
+2. Enter synthetic demo details only; do not enter real personal data.
+3. Call `POST /api/application/validate` to receive field-completeness results.
+4. Call `POST /api/application/draft` to create a local draft only when all required fields are valid.
+5. Review the preview and optionally download the JSON draft.
+6. Treat the result as a demonstration artifact: it is not submitted to a municipality, and no permit is issued.
+
+## API contract
+- `POST /api/application/validate`: accepts a JSON object containing only the required string fields; returns deterministic validation results.
+- `POST /api/application/draft`: accepts the same field contract; returns an unsubmitted draft when valid and a validation response when incomplete.
+- Unexpected fields and non-string values are rejected. The API does not accept a client-supplied approval or submission flag as authority.
 
 ## Success criteria
 - All offline unit tests pass without network access or a live API key.
@@ -53,10 +68,24 @@ Build and evaluate a small, auditable agent that answers in Arabic or English, r
 - Secret leakage: environment variables only; never log API keys or raw credentials.
 
 ## Deliverables
-- Source code and tests.
-- Evaluation runner and cases.
+- Source code for the Flask application, rule-based agent, and optional OpenRouter tool-calling agent.
+- Local synthetic policy retrieval and deterministic application validation.
+- Guided application-builder UI with local JSON draft export.
+- Unit/API tests and deterministic evaluation runner.
+- Live-model evaluation plan and manual review rubric (live-model quality is not established until outputs are reviewed).
 - This capstone brief and the engineering-loop guide.
-- A results report with commands, counts, known limitations, and unresolved failures.
+- A results report with commands, actual test/evaluation counts, known limitations, and unresolved failures.
+
+## Acceptance checklist
+- [ ] The home page and `/application` page load.
+- [ ] Valid application fields can be checked and produce a local draft.
+- [ ] Missing fields prevent a completed draft.
+- [ ] Unexpected JSON fields and non-string values are rejected.
+- [ ] Exported JSON clearly indicates the draft is not submitted.
+- [ ] Chat and application endpoints return safe errors for invalid input or provider failures.
+- [ ] All automated tests and offline evaluations pass in the target environment.
+- [ ] The final demo states that all policy and permit data are fictional.
+- [ ] No live-model quality claims are made without reviewing actual outputs.
 
 ## Reproducibility
 From the project directory:
