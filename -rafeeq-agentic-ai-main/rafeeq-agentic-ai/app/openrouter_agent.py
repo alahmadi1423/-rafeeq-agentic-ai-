@@ -1,7 +1,10 @@
 import json
+import logging
 import os
 
 from openai import OpenAI
+logger = logging.getLogger(__name__)
+
 from app.tools import (
     search_policies,
     validate_application,
@@ -245,6 +248,8 @@ def run_openrouter_agent(message, max_tool_rounds=4):
         }
 
     except Exception:
+        # Keep provider details out of the user-facing response, but retain them in server logs.
+        logger.exception("OpenRouter agent request failed")
         return {
             "ok": False,
             "error": "تعذر الاتصال بخدمة النموذج. تحقق من الإعدادات ثم حاول مرة أخرى.",
