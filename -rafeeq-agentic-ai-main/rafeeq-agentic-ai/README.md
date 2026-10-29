@@ -174,6 +174,7 @@ The project includes a capstone brief and a repeatable improvement workflow:
 - [Engineering loop](ENGINEERING_LOOP.md): reproduce → specify → change → test → evaluate → review → document.
 - [Offline eval runner](evals/run_evals.py): deterministic checks for local policy search, invalid tool calls, application validation, and safe draft status.
 - [Live-model evaluation plan](evals/MODEL_EVALS.md): Arabic/English scenarios and a scoring rubric for grounding, tool use, safety, and clarity.
+- [Error analysis](ERROR_ANALYSIS.md): classify failures, identify root causes, and track regression tests.
 - [Trifecta analysis](TRIFECTA_ANALYSIS.md): evaluate quality, latency, and cost together, with safety treated as a release gate.
 
 Run the offline evals from the project root:
