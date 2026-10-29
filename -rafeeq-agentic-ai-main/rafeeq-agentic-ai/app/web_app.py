@@ -5,6 +5,7 @@ from threading import Lock
 from flask import Flask, jsonify, render_template, request
 
 from app.openrouter_agent import run_openrouter_agent
+from app.tools import REQUIRED_FIELDS, create_application_draft, validate_application
 
 app = Flask(__name__)
 app.config["MAX_CONTENT_LENGTH"] = 16 * 1024
@@ -30,6 +31,41 @@ def _is_rate_limited(client_key: str) -> bool:
 @app.get("/")
 def home():
     return render_template("index.html")
+
+
+@app.get("/application")
+def application_page():
+    """Show the structured application assistant."""
+    return render_template("application.html")
+
+
+def _application_payload():
+    payload = request.get_json(silent=True)
+    if not isinstance(payload, dict):
+        return None, (jsonify({"error": "أرسل البيانات بصيغة JSON صحيحة."}), 400)
+    if set(payload) - set(REQUIRED_FIELDS):
+        return None, (jsonify({"error": "تحتوي البيانات على حقول غير مسموحة."}), 400)
+    application = {field: payload.get(field, "") for field in REQUIRED_FIELDS}
+    if any(not isinstance(value, str) for value in application.values()):
+        return None, (jsonify({"error": "يجب أن تكون جميع الحقول نصية."}), 400)
+    return application, None
+
+
+@app.post("/api/application/validate")
+def validate_application_api():
+    application, error_response = _application_payload()
+    if error_response:
+        return error_response
+    return jsonify({"result": validate_application(application)}), 200
+
+
+@app.post("/api/application/draft")
+def create_application_draft_api():
+    application, error_response = _application_payload()
+    if error_response:
+        return error_response
+    result = create_application_draft(application)
+    return jsonify({"result": result}), 200 if result.get("status") == "awaiting_approval" else 422
 
 
 @app.post("/chat")
