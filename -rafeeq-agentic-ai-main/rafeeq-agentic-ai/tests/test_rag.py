@@ -49,17 +49,17 @@ def _text_pdf(text: str) -> bytes:
 
 def test_pdf_upload_extracts_text_and_query_returns_page_citation():
     clear_uploaded_documents()
-    result = add_pdf_document("permit-guide.pdf", _text_pdf("Food truck permit application requirements"))
+    result = add_pdf_document("permit-guide.pdf", _text_pdf("Zorblax transfer protocol governs permit applications"))
     assert result["ok"] is True
     assert result["pages"] == 1
     assert result["chunks"] == 1
 
-    search = retrieve_chunks("food truck permit requirements")
+    search = retrieve_chunks("zorblax transfer protocol")
     assert search["ok"] is True
     assert search["results"]
     assert search["results"][0]["source"] == "permit-guide.pdf"
     assert search["results"][0]["citation"] == "[permit-guide.pdf, page 1]"
-    assert "application requirements" in search["results"][0]["content"].lower()
+    assert "zorblax transfer protocol" in search["results"][0]["content"].lower()
     assert search["results"][0]["synthetic"] is False
     clear_uploaded_documents()
 
