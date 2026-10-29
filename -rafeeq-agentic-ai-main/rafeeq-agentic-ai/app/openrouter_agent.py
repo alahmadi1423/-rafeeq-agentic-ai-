@@ -1,4 +1,3 @@
-
 import json
 import os
 
@@ -11,7 +10,10 @@ from app.tools import (
 
 MODEL = os.getenv("OPENROUTER_MODEL", "openrouter/free")
 MAX_MESSAGE_LENGTH = 4000
+MAX_TOOL_ROUNDS = 6
+MAX_TOOL_CALLS_PER_ROUND = 4
 ALLOWED_TOOLS = {"search_policies", "validate_application", "create_application_draft"}
+APPLICATION_FIELDS = {"applicant_name", "location", "activity", "contact"}
 
 INSTRUCTIONS = """
 You are Rafeeq, an educational municipal food-truck permit assistant.
@@ -108,39 +110,65 @@ TOOLS = [
     }
 ]
 
+
 def _run_tool(name, arguments):
+    """Validate model-generated arguments before dispatching to local tools."""
     if name not in ALLOWED_TOOLS:
         return {"ok": False, "error": "Tool is not allowed."}
     if not isinstance(arguments, dict):
         return {"ok": False, "error": "Tool arguments must be an object."}
+
     if name == "search_policies":
+        if set(arguments) != {"query"} or not isinstance(arguments["query"], str):
+            return {"ok": False, "error": "Invalid policy-search arguments."}
         return search_policies(arguments["query"])
-    if name == "validate_application":
-        return validate_application(arguments["application"])
-    if name == "create_application_draft":
-        return create_application_draft(arguments["application"])
-    return {"error": "Unknown tool"}
+
+    if name in {"validate_application", "create_application_draft"}:
+        if set(arguments) != {"application"}:
+            return {"ok": False, "error": "Invalid application arguments."}
+        application = arguments["application"]
+        if not isinstance(application, dict):
+            return {"ok": False, "error": "Application must be an object."}
+        if set(application) != APPLICATION_FIELDS:
+            return {
+                "ok": False,
+                "error": "Application must contain exactly the required fields.",
+            }
+        if any(not isinstance(application[field], str) for field in APPLICATION_FIELDS):
+            return {"ok": False, "error": "Application fields must be text."}
+        if name == "validate_application":
+            return validate_application(application)
+        return create_application_draft(application)
+
+    return {"ok": False, "error": "Unknown tool."}
+
 
 def run_openrouter_agent(message, max_tool_rounds=4):
     if not isinstance(message, str) or not message.strip():
         return {"ok": False, "error": "Message cannot be empty.", "trace": []}
     if len(message) > MAX_MESSAGE_LENGTH:
         return {"ok": False, "error": "الرسالة طويلة جدًا. اختصرها إلى 4000 حرف أو أقل.", "trace": []}
-    if not isinstance(max_tool_rounds, int) or not 1 <= max_tool_rounds <= 6:
+    if (
+        isinstance(max_tool_rounds, bool)
+        or not isinstance(max_tool_rounds, int)
+        or not 1 <= max_tool_rounds <= MAX_TOOL_ROUNDS
+    ):
         max_tool_rounds = 4
 
     api_key = os.getenv("OPENROUTER_API_KEY")
     if not api_key:
-        return {"ok": False, "error": "OPENROUTER_API_KEY is not set."}
+        return {"ok": False, "error": "OPENROUTER_API_KEY is not set.", "trace": []}
 
     client = OpenAI(
         base_url="https://openrouter.ai/api/v1",
         api_key=api_key,
+        timeout=30.0,
+        max_retries=1,
     )
 
     messages = [
         {"role": "system", "content": INSTRUCTIONS},
-        {"role": "user", "content": message},
+        {"role": "user", "content": message.strip()},
     ]
     tool_steps = 0
     trace = []
@@ -165,30 +193,47 @@ def run_openrouter_agent(message, max_tool_rounds=4):
                     "trace": trace,
                 }
 
-            messages.append(
-                assistant_message.model_dump(exclude_none=True)
-            )
+            # Prevent one model response from triggering an unbounded batch of tools.
+            if len(calls) > MAX_TOOL_CALLS_PER_ROUND:
+                return {
+                    "ok": False,
+                    "error": "Too many tool calls in one response.",
+                    "tool_steps": tool_steps,
+                    "trace": trace,
+                }
+
+            messages.append(assistant_message.model_dump(exclude_none=True))
 
             for call in calls:
                 try:
                     arguments = json.loads(call.function.arguments)
-                    if call.function.name not in ALLOWED_TOOLS:
-                        result = {"ok": False, "error": "Tool is not allowed."}
-                    else:
-                        result = _run_tool(call.function.name, arguments)
-                    trace.append({"step": tool_steps + 1, "tool": call.function.name,
-                                  "status": "success" if result.get("ok", True) else "blocked_or_error"})
-                except Exception as exc:
-                    # Keep internal details in server logs only; do not send them to the model/UI.
+                    result = _run_tool(call.function.name, arguments)
+                    trace.append({
+                        "step": tool_steps + 1,
+                        "tool": call.function.name,
+                        "status": "success" if result.get("ok", True) else "blocked_or_error",
+                    })
+                except (TypeError, ValueError, KeyError):
+                    # Keep malformed arguments and internal details out of the UI.
+                    result = {"ok": False, "error": "Invalid tool arguments."}
+                    trace.append({
+                        "step": tool_steps + 1,
+                        "tool": str(call.function.name),
+                        "status": "error",
+                    })
+                except Exception:
+                    # Keep internal exception details out of the model/UI.
                     result = {"ok": False, "error": "Tool execution failed."}
-                    trace.append({"step": tool_steps + 1, "tool": str(call.function.name), "status": "error"})
+                    trace.append({
+                        "step": tool_steps + 1,
+                        "tool": str(call.function.name),
+                        "status": "error",
+                    })
 
                 messages.append({
                     "role": "tool",
                     "tool_call_id": call.id,
-                    "content": json.dumps(
-                        result, ensure_ascii=False, default=str
-                    ),
+                    "content": json.dumps(result, ensure_ascii=False, default=str),
                 })
                 tool_steps += 1
 
@@ -199,7 +244,7 @@ def run_openrouter_agent(message, max_tool_rounds=4):
             "trace": trace,
         }
 
-    except Exception as exc:
+    except Exception:
         return {
             "ok": False,
             "error": "تعذر الاتصال بخدمة النموذج. تحقق من الإعدادات ثم حاول مرة أخرى.",
