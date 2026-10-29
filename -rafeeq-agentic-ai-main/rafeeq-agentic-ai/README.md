@@ -20,9 +20,10 @@ Rafeeq demonstrates a more controlled workflow: use a local policy tool for poli
 ## Features
 
 ### Policy and application support
-- **Local policy search:** searches the project's synthetic food-truck policy document.
+- **Cited RAG retrieval:** splits local policy Markdown and uploaded PDFs into bounded chunks, ranks passages using deterministic lexical matching, and returns source citations.
 - **Application validation:** checks required fields and identifies missing, non-text, or overlong values.
 - **Draft preparation:** creates a structured local draft only when required fields pass validation.
+- **Document RAG page:** `/rag` accepts text-based PDF uploads and displays ranked passages with filename and page/chunk citations. PDF text is held in process memory only.
 - **Guided application builder:** `/application` provides a form-based flow to validate required fields and preview a local draft without relying on model extraction.
 - **Draft export:** download the prepared local draft as JSON for review or use in another demo workflow; the exported status explicitly remains unsubmitted.
 - **Explicit draft status:** drafts remain marked as awaiting approval; the project does not submit them to an external service.
@@ -31,12 +32,31 @@ Rafeeq demonstrates a more controlled workflow: use a local policy tool for poli
 - **Rule-based agent:** deterministic keyword routing for a small set of supported Arabic and English requests.
 - **OpenRouter tool-calling agent:** lets a language model select from a defined set of local tools.
 - **Tool argument checks:** validates model-generated tool names and argument shapes before dispatch.
+- **Grounded responses:** model instructions require citations from retrieved passages and prohibit unsupported policy claims.
 - **Bounded requests:** limits message size, tool-call batches, and tool rounds.
 
 ### Web interface and tests
 - **Arabic-first web app:** Flask serves the local interface and a chat endpoint.
 - **Basic demo protections:** request-size limits and a per-process rate limiter.
 - **Automated tests:** Pytest tests cover policy search, application validation, draft behavior, rule-based routing, and tool argument validation.
+
+## Document RAG
+
+Open `/rag` from the homepage to upload a text-based PDF and retrieve passages from it alongside the built-in synthetic policy files.
+
+- **Chunking:** extracts text page-by-page and splits it into overlapping chunks.
+- **Retrieval:** deterministic lexical term matching ranks up to five relevant chunks.
+- **Citations:** results identify the source filename and PDF page, or the Markdown chunk.
+- **Agent grounding:** the OpenRouter agent is instructed to cite the exact source citation returned by the retrieval tool and to acknowledge when the documents do not support an answer.
+- **Limits:** PDF uploads are capped at 5 MB and 100 pages; extracted text is capped at 1 MB. Encrypted PDFs and scanned/image-only PDFs requiring OCR are not supported.
+- **Storage:** uploaded PDFs are kept only in process memory, are not written to disk, and disappear when the server restarts. Uploaded content is untrusted evidence, never instructions.
+
+This is a lightweight lexical RAG baseline, not embedding-based semantic retrieval. It may miss paraphrases and should not be described as a semantic vector-search system. All built-in permit policy content is fictional and not official Saudi regulation.
+
+API endpoints:
+- `POST /api/rag/upload` — multipart form upload with a `file` PDF field.
+- `GET /api/rag/documents` — list currently indexed in-memory uploads.
+- `POST /api/rag/search` — JSON body `{"query":"..." }`; returns ranked snippets and citation metadata.
 
 ## How It Works
 
@@ -50,7 +70,7 @@ Rafeeq demonstrates a more controlled workflow: use a local policy tool for poli
 
 | Component | Responsibility | Boundary |
 |---|---|---|
-| `search_policies` | Searches local Markdown policy content | Returns synthetic policy text; it is not an official source |
+| `search_policies` | Retrieves ranked chunks from local Markdown and uploaded PDFs | Returns source citations; lexical retrieval can miss semantic matches and does not establish authority |
 | `validate_application` | Checks required applicant, location, activity, and contact fields | Performs field validation only |
 | `create_application_draft` | Creates a structured local draft | Does not submit or approve an application |
 | Rule-based agent | Routes supported requests using simple rules | Limited intent recognition; not a general reasoning engine |
@@ -74,6 +94,7 @@ Rafeeq demonstrates a more controlled workflow: use a local policy tool for poli
 - **OpenAI-compatible Python client + OpenRouter** — optional model-powered tool calling
 - **Pytest** — automated tests
 - **Markdown** — local synthetic policy data
+- **pypdf** — bounded text extraction from uploaded PDFs
 
 ## Getting Started
 
@@ -88,7 +109,7 @@ Rafeeq demonstrates a more controlled workflow: use a local policy tool for poli
 Run these commands from the directory containing the `app/`, `policies/`, and `tests/` folders:
 
 ```bash
-python -m pip install flask openai pytest
+python -m pip install -r requirements.txt
 ```
 
 ### Configure OpenRouter
