@@ -1,0 +1,15 @@
+# Secrets and local configuration
+.env
+.env.*
+!.env.example
+
+# Python
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.venv/
+venv/
+
+# Generated live-model evaluation outputs may contain prompts and responses.
+# Keep them local unless intentionally sanitized and reviewed.
+evals/results/
