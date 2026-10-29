@@ -183,7 +183,7 @@ Run the offline evals from the project root:
 PYTHONPATH=. python -m evals.run_evals
 ```
 
-These checks do not call OpenRouter and do not establish live-model answer quality. Run and report live-model evaluations separately using the documented rubric. For each live run, record the model ID, date, dataset version, pass rate, latency, and estimated cost; do not claim measurements that were not collected.
+These checks do not call OpenRouter and do not establish live-model answer quality. To run the live-model smoke test (real API requests; charges may apply), set `OPENROUTER_API_KEY` and run `PYTHONPATH=. python -m evals.run_model_evals`. Review the saved JSON results before scoring them. Compare reviewed runs with `PYTHONPATH=. python -m evals.compare_model_evals path/to/before.json path/to/after.json`. The current runner records latency but does not estimate provider cost.
 
 ## Learning Resource
 
